@@ -8,6 +8,11 @@ EXTRA_OECMAKE += "-DSHIBOKEN_BUILD_LIBS=ON \
                   -DPython_SOABI='cpython-${@ d.getVar('PYTHON_BASEVERSION').replace('.', '')}' \
                  "
 
+EXTRA_OECMAKE:append:riscv32 = " -DPython_SOABI=cpython-313-riscv32-linux-musl"
+# some 32bit arches do not have compiler provide 64bit atomics e.g.
+# __atomic_load_8 resulting in configure errors like
+LDFLAGS:append:riscv32 = " -latomic"
+
 do_install:append() {
     # shiboken6.pc in package python3-shiboken6-dev contains reference to TMPDIR [buildpaths]
     sed -i ${D}${QT6_INSTALL_LIBDIR}/pkgconfig/shiboken6.pc \
