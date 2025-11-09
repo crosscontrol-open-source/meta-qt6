@@ -1,0 +1,47 @@
+Include signal.h before including Chromium headers especially
+sandbox/linux/system_headers/linux_seccomp.h which defines
+
+#ifndef SYS_SECCOMP
+#define SYS_SECCOMP                   1
+#endif
+
+This is in conflict with glibc 2.43+ which now defines it
+too, as an enum [1]
+
+[1] https://github.com/bminor/glibc/commit/6f120faf649f03a261e3e64d5b5991030383c1b3
+
+Upstream-Status: Pending
+Signed-off-by: Khem Raj <raj.khem@gmail.com>
+--- a/chromium/sandbox/linux/seccomp-bpf-helpers/sigsys_handlers.cc
++++ b/chromium/sandbox/linux/seccomp-bpf-helpers/sigsys_handlers.cc
+@@ -13,6 +13,7 @@
+ 
+ #include <fcntl.h>
+ #include <linux/net.h>
++#include <signal.h>
+ #include <stddef.h>
+ #include <stdint.h>
+ #include <string.h>
+--- a/chromium/sandbox/linux/seccomp-bpf/trap.cc
++++ b/chromium/sandbox/linux/seccomp-bpf/trap.cc
+@@ -29,8 +29,8 @@
+ #include "sandbox/linux/seccomp-bpf/die.h"
+ #include "sandbox/linux/seccomp-bpf/syscall.h"
+ #include "sandbox/linux/services/syscall_wrappers.h"
+-#include "sandbox/linux/system_headers/linux_seccomp.h"
+ #include "sandbox/linux/system_headers/linux_signal.h"
++#include "sandbox/linux/system_headers/linux_seccomp.h"
+ 
+ namespace {
+ 
+--- a/chromium/sandbox/linux/system_headers/linux_seccomp.h
++++ b/chromium/sandbox/linux/system_headers/linux_seccomp.h
+@@ -214,7 +214,7 @@ struct seccomp_notif_addfd {
+ #define SECCOMP_RET_INVALID 0x00010000U  // Illegal return value
+ #endif
+ 
+-#ifndef SYS_SECCOMP
++#if !defined(SYS_SECCOMP) && (!defined(__GLIBC__) || !__GLIBC_PREREQ(2, 43))
+ #define SYS_SECCOMP                   1
+ #endif
+ 
